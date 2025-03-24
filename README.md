@@ -2,15 +2,17 @@
 
 memadvise is a CLI tool that leverages the obscure but powerful process_madvise() syscall to proactively reclaim cold memory from specific processes-without killing them or waiting for the kernel to panic under pressure.
 
-## Overview
 
-memadvise is a focused command-line utility that lets power users and system integrators proactively reclaim cold or unused memory from running Linux processes using the little-known process_madvise() syscall. This syscall, introduced in Linux 5.10, remains largely undocumented and underutilized despite offering fine-grained control over per-process memory advisory - letting one process hint the kernel about memory in another, safely and explicitly.
+## 🧾 Overview
 
-Unlike traditional system memory management, which kicks in reactively under pressure (via kswapd, OOM killer, or swap), memadvise gives users the ability to surgically and proactively advise the kernel to deprioritize or page out specific memory ranges-without terminating the process, without modifying the application, and without relying on container limits or global sysctls.
+`memadvise` is a focused command-line utility that allows power users and system integrators to selectively reclaim anonymous memory pages from running Linux processes using the **little-known `process_madvise()` syscall** (introduced in Linux 5.10). Despite being a kernel-native mechanism for advisory memory management, this syscall remains largely undocumented and underutilized in userspace tooling.
 
-By targeting anonymous, private memory (such as unused heap), memadvise helps reclaim memory from background tasks, idle VMs, long-running batch jobs, or memory-hungry desktop applications-giving users more control over their system's memory footprint with minimal risk.
+Unlike traditional memory reclaim mechanisms (e.g. `kswapd`, OOM killer, or swap) that operate reactively and globally, `memadvise` allows **fine-grained, per-process reclaim** under explicit user control — with zero disruption to the process itself. It allows you to tell the kernel:  
+> “This memory is safe to deprioritize or evict — do it on my terms.”
 
-Whether you're building a smarter virtualization platform, optimizing memory on a container host, or just trying to keep your desktop snappy without overcommit drama, memadvise gives you a precise lever the kernel already supports-but never made easy to use. Until now.
+By targeting **anonymous, private, writable memory** (such as unused heap), `memadvise` can help reclaim memory from backgrounded processes, idle VMs, long-lived batch jobs, or bloated desktop applications — all without forcing the application to cooperate or exit.
+
+Whether you're building a smarter virtualization platform, optimizing node memory usage, or just trying to keep your desktop responsive without relying on aggressive overcommit behavior, `memadvise` gives you a clean, controlled interface to a feature the Linux kernel already supports — but never made easy to use. Until now.
 
 ## Requirements
 
