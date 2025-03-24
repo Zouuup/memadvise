@@ -14,6 +14,9 @@ import (
 )
 
 func main() {
+	// Preprocess arguments to handle multiple PIDs (e.g., from command substitution)
+	os.Args = preprocessArgs(os.Args)
+
 	app := &cli.App{
 		Name:  "memadvise",
 		Usage: "Safely mark cold memory pages in running processes",
@@ -86,11 +89,6 @@ func run(c *cli.Context) error {
 	mode := c.String("mode")
 	if mode != "cold" && mode != "pageout" {
 		return fmt.Errorf("invalid mode: %s (must be 'cold' or 'pageout')", mode)
-	}
-
-	// Debug output - remove after fixing
-	if c.Bool("verbose") {
-		fmt.Printf("Using mode: %s\n", mode)
 	}
 
 	// Initialize output based on flags
@@ -190,6 +188,7 @@ func parsePids(targetStr string) ([]int, error) {
 	return pids, nil
 }
 
+// calculateBudget calculates the memory budget based on the given parameters
 func calculateBudget(totalRSS int64, percent int, maxBytes int64) int64 {
 	if percent <= 0 || percent > 100 {
 		percent = 30 // Default to 30% if invalid
@@ -202,4 +201,67 @@ func calculateBudget(totalRSS int64, percent int, maxBytes int64) int64 {
 	}
 
 	return budget
+}
+
+// preprocessArgs handles the case where multiple PIDs are passed as separate arguments
+// due to command substitution (e.g., `pidof stress` returning multiple PIDs)
+func preprocessArgs(args []string) []string {
+	if len(args) <= 2 {
+		return args
+	}
+
+	processed := make([]string, 0, len(args))
+	targetIndex := -1
+	pids := []string{}
+	inPidCollection := false
+
+	// First pass: identify where target flag is and collect PIDs
+	for i, arg := range args {
+		if arg == "--target" || arg == "-t" {
+			targetIndex = i
+			processed = append(processed, arg)
+			inPidCollection = true
+			continue
+		}
+
+		// Check if it's a new flag
+		if strings.HasPrefix(arg, "-") {
+			inPidCollection = false
+			processed = append(processed, arg)
+			continue
+		}
+
+		// If we're collecting PIDs, try to parse as int
+		if inPidCollection {
+			_, err := strconv.Atoi(arg)
+			if err == nil {
+				// It's a valid PID
+				pids = append(pids, arg)
+			} else {
+				// Not a PID, stop collecting
+				inPidCollection = false
+				processed = append(processed, arg)
+			}
+		} else {
+			processed = append(processed, arg)
+		}
+	}
+
+	// If we found PIDs to combine
+	if targetIndex >= 0 && len(pids) > 0 {
+		// Insert the combined PIDs right after the target flag
+		combined := strings.Join(pids, ",")
+		result := make([]string, 0, len(processed)+1)
+
+		for i, arg := range processed {
+			result = append(result, arg)
+			if i == targetIndex {
+				result = append(result, combined)
+			}
+		}
+
+		return result
+	}
+
+	return args
 }

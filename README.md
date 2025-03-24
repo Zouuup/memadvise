@@ -1,10 +1,16 @@
 # memadvise
 
-A command-line utility to allow advanced users and system integrators to safely and explicitly mark cold memory pages in running Linux processes using the process_madvise syscall.
+memadvise is a CLI tool that leverages the obscure but powerful process_madvise() syscall to proactively reclaim cold memory from specific processes-without killing them or waiting for the kernel to panic under pressure.
 
 ## Overview
 
-`memadvise` enables proactive memory optimization under user control, outside of kernel-level reactive reclaim policies. Unlike a generic daemon, this CLI targets specific processes with clear user intent and applies controlled, measurable memory reclamation strategies. It's especially useful in environments without swap, where anonymous memory tends to accumulate without release.
+memadvise is a focused command-line utility that lets power users and system integrators proactively reclaim cold or unused memory from running Linux processes using the little-known process_madvise() syscall. This syscall, introduced in Linux 5.10, remains largely undocumented and underutilized despite offering fine-grained control over per-process memory advisory - letting one process hint the kernel about memory in another, safely and explicitly.
+
+Unlike traditional system memory management, which kicks in reactively under pressure (via kswapd, OOM killer, or swap), memadvise gives users the ability to surgically and proactively advise the kernel to deprioritize or page out specific memory ranges-without terminating the process, without modifying the application, and without relying on container limits or global sysctls.
+
+By targeting anonymous, private memory (such as unused heap), memadvise helps reclaim memory from background tasks, idle VMs, long-running batch jobs, or memory-hungry desktop applications-giving users more control over their system's memory footprint with minimal risk.
+
+Whether you're building a smarter virtualization platform, optimizing memory on a container host, or just trying to keep your desktop snappy without overcommit drama, memadvise gives you a precise lever the kernel already supports-but never made easy to use. Until now.
 
 ## Requirements
 
@@ -12,6 +18,10 @@ A command-line utility to allow advanced users and system integrators to safely 
 - Go 1.20+
 
 ## Installation
+
+```bash
+go install github.com/zouuup/memadvise
+```
 
 ### From Source
 
